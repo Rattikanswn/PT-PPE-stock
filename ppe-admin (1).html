@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin | PPE Stock</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0f1117;--surface:#1a1d27;--surface2:#22263a;
+    --border:#2e3248;--accent:#4f8ef7;--accent2:#7c5cfc;
+    --green:#22c55e;--yellow:#f59e0b;--red:#ef4444;
+    --text:#e8eaf6;--muted:#6b7280;--card-shadow:0 4px 24px rgba(0,0,0,0.4);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+  .shell{display:flex;min-height:100vh;}
+
+  /* Login */
+  .login-overlay{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:999;}
+  .login-box{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:40px;width:340px;box-shadow:var(--card-shadow);text-align:center;}
+  .login-box h2{font-size:20px;margin-bottom:6px;}
+  .login-box p{color:var(--muted);font-size:13px;margin-bottom:24px;}
+  .login-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-family:'Sarabun',sans-serif;font-size:14px;outline:none;margin-bottom:12px;}
+  .login-input:focus{border-color:var(--accent);}
+  .login-btn{width:100%;padding:11px;border-radius:8px;border:none;background:var(--accent);color:white;font-family:'Sarabun',sans-serif;font-size:15px;font-weight:600;cursor:pointer;}
+  .login-err{color:var(--red);font-size:13px;margin-top:8px;display:none;}
+
+  /* Sidebar */
+  .sidebar{width:220px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:24px 0;position:fixed;height:100vh;z-index:10;}
+  .logo{padding:0 20px 24px;border-bottom:1px solid var(--border);margin-bottom:16px;}
+  .logo h1{font-family:'IBM Plex Sans Thai',sans-serif;font-size:15px;font-weight:700;color:var(--accent);}
+  .logo p{font-size:11px;color:var(--muted);margin-top:2px;}
+  .logo .admin-badge{display:inline-block;background:rgba(239,68,68,0.15);color:var(--red);border-radius:4px;padding:2px 8px;font-size:11px;margin-top:6px;}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;font-size:14px;color:var(--muted);border-left:3px solid transparent;transition:all 0.2s;user-select:none;}
+  .nav-item:hover{color:var(--text);background:var(--surface2);}
+  .nav-item.active{color:var(--accent);border-left-color:var(--accent);background:rgba(79,142,247,0.08);}
+  .nav-icon{font-size:16px;width:20px;text-align:center;}
+  .logout-btn{margin-top:auto;margin:auto 20px 0;padding:9px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Sarabun',sans-serif;font-size:13px;cursor:pointer;transition:all 0.2s;text-align:left;}
+  .logout-btn:hover{border-color:var(--red);color:var(--red);}
+
+  /* Main */
+  .main{margin-left:220px;flex:1;padding:28px;}
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;}
+  .page-title{font-size:22px;font-weight:600;}
+  .page-title span{color:var(--muted);font-size:14px;font-weight:400;margin-left:8px;}
+  .topbar-actions{display:flex;gap:8px;}
+
+  .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px;}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 20px;box-shadow:var(--card-shadow);}
+  .card-label{font-size:12px;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.8px;}
+  .card-value{font-size:28px;font-weight:700;font-family:'IBM Plex Sans Thai',sans-serif;}
+  .card-value.green{color:var(--green)}.card-value.yellow{color:var(--yellow)}.card-value.red{color:var(--red)}.card-value.accent{color:var(--accent)}
+
+  .panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:var(--card-shadow);margin-bottom:24px;}
+  .panel-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+  .panel-title{font-size:15px;font-weight:600;}
+  table{width:100%;border-collapse:collapse;}
+  th{text-align:left;padding:12px 16px;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;border-bottom:1px solid var(--border);background:rgba(0,0,0,0.2);}
+  td{padding:11px 16px;font-size:14px;border-bottom:1px solid rgba(46,50,72,0.5);}
+  tr:last-child td{border-bottom:none;}
+  tr:hover td{background:rgba(255,255,255,0.02);}
+
+  .badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:500;}
+  .badge.ok{background:rgba(34,197,94,0.15);color:var(--green);}
+  .badge.low{background:rgba(245,158,11,0.15);color:var(--yellow);}
+  .badge.out{background:rgba(239,68,68,0.15);color:var(--red);}
+  .badge.cancelled{background:rgba(107,114,128,0.15);color:var(--muted);}
+
+  .form-label{font-size:13px;color:var(--muted);margin-bottom:6px;display:block;font-weight:500;}
+  .form-input,.form-select{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-family:'Sarabun',sans-serif;font-size:14px;outline:none;transition:border-color 0.2s;}
+  .form-input:focus,.form-select:focus{border-color:var(--accent);}
+  .form-select option{background:var(--surface2);}
+  .row-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+  .row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px;}
+
+  .btn{display:inline-flex;align-items:center;gap:6px;padding:10px 18px;border-radius:8px;font-family:'Sarabun',sans-serif;font-size:14px;font-weight:500;cursor:pointer;border:none;transition:all 0.2s;}
+  .btn-primary{background:var(--accent);color:white;}
+  .btn-primary:hover{background:#6fa0ff;transform:translateY(-1px);}
+  .btn-outline{background:transparent;color:var(--muted);border:1px dashed var(--border);}
+  .btn-outline:hover{border-color:var(--accent);color:var(--accent);}
+  .btn-sm{padding:6px 12px;font-size:12px;border-radius:6px;}
+  .btn-green{background:rgba(34,197,94,0.15);color:var(--green);border:none;}
+  .btn-red{background:rgba(239,68,68,0.15);color:var(--red);border:none;}
+  .btn-yellow{background:rgba(245,158,11,0.15);color:var(--yellow);border:none;}
+  .btn-export{background:rgba(34,197,94,0.15);color:var(--green);border:1px solid rgba(34,197,94,0.3);}
+  .btn-export:hover{background:rgba(34,197,94,0.25);}
+
+  .toast{position:fixed;top:20px;right:20px;background:var(--green);color:white;padding:12px 20px;border-radius:10px;font-size:14px;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,0.4);z-index:200;transform:translateX(120%);transition:transform 0.3s;}
+  .toast.show{transform:translateX(0);}
+  .toast.error{background:var(--red);}
+
+  .stock-bar{height:4px;background:var(--border);border-radius:2px;margin-top:6px;}
+  .stock-fill{height:100%;border-radius:2px;transition:width 0.4s;}
+  .stock-num{font-size:18px;font-weight:700;}
+
+  .page{display:none;}.page.active{display:block;}
+
+  /* Modal */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);display:flex;align-items:center;justify-content:center;z-index:100;opacity:0;pointer-events:none;transition:opacity 0.2s;}
+  .modal-overlay.open{opacity:1;pointer-events:all;}
+  .modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;width:480px;max-width:95vw;transform:scale(0.95);transition:transform 0.2s;max-height:90vh;overflow-y:auto;}
+  .modal-overlay.open .modal{transform:scale(1);}
+  .modal h3{font-size:17px;margin-bottom:20px;}
+
+  .empty-state{text-align:center;padding:48px;color:var(--muted);}
+  .empty-state .icon{font-size:40px;margin-bottom:12px;}
+
+  .pulse{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);margin-right:6px;animation:pulse 2s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(34,197,94,0.4)}50%{opacity:.8;box-shadow:0 0 0 6px rgba(34,197,94,0)}}
+  .dept-tag{display:inline-block;background:rgba(79,142,247,0.15);color:var(--accent);border-radius:4px;padding:2px 8px;font-size:12px;}
+
+  /* Edit history inline */
+  .edit-inline{background:var(--surface2);border:1px solid var(--accent);border-radius:8px;padding:8px 10px;color:var(--text);font-family:'Sarabun',sans-serif;font-size:13px;outline:none;width:80px;}
+  .cancelled-row td{opacity:0.45;text-decoration:line-through;}
+  .cancelled-row td:last-child{opacity:1;text-decoration:none;}
+
+  /* history item edit */
+  .hist-item-row{display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid rgba(46,50,72,0.4);}
+  .hist-item-row:last-child{border-bottom:none;}
+  .hist-item-name{flex:1;font-size:13px;}
+  .hist-item-qty{width:60px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--text);font-family:'Sarabun',sans-serif;font-size:13px;outline:none;text-align:center;}
+  .hist-item-unit{font-size:12px;color:var(--muted);width:32px;}
+
+  /* two col layout */
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+</style>
+</head>
+<body>
+
+<!-- Login -->
+<div class="login-overlay" id="login-overlay">
+  <div class="login-box">
+    <div style="font-size:36px;margin-bottom:12px">🔐</div>
+    <h2>Admin เท่านั้น</h2>
+    <p>กรอกรหัสผ่านเพื่อเข้าสู่ระบบหลังบ้าน</p>
+    <input class="login-input" type="password" id="pw-input" placeholder="รหัสผ่าน" onkeydown="if(event.key==='Enter')doLogin()" />
+    <button class="login-btn" onclick="doLogin()">เข้าสู่ระบบ</button>
+    <div class="login-err" id="login-err">รหัสผ่านไม่ถูกต้อง</div>
+    <p style="margin-top:16px;font-size:11px;color:var(--muted)">รหัสผ่านเริ่มต้น: <strong style="color:var(--accent)">admin1234</strong></p>
+  </div>
+</div>
+
+<div class="shell" id="app" style="display:none">
+  <nav class="sidebar">
+    <div class="logo">
+      <h1>🦺 PPE Admin</h1>
+      <p>ระบบหลังบ้าน</p>
+      <span class="admin-badge">🔒 Admin</span>
+    </div>
+    <div class="nav-item active" onclick="showPage('stock',this)"><span class="nav-icon">📊</span> Stock คงเหลือ</div>
+    <div class="nav-item" onclick="showPage('history',this)"><span class="nav-icon">🕒</span> ประวัติการเบิก</div>
+    <div class="nav-item" onclick="showPage('manage',this)"><span class="nav-icon">⚙️</span> จัดการระบบ</div>
+    <button class="logout-btn" onclick="doLogout()">🚪 ออกจากระบบ</button>
+  </nav>
+
+  <main class="main">
+
+    <!-- ===== STOCK ===== -->
+    <div class="page active" id="page-stock">
+      <div class="topbar">
+        <div class="page-title">Stock คงเหลือ <span><span class="pulse"></span>Real-time</span></div>
+        <div class="topbar-actions">
+          <button class="btn btn-export btn-sm" onclick="exportStock()">📥 Export Excel</button>
+          <button class="btn btn-outline btn-sm" onclick="openAddModal()">+ เพิ่มอุปกรณ์</button>
+        </div>
+      </div>
+      <div class="cards" id="summary-cards"></div>
+      <div class="panel">
+        <div class="panel-header"><span class="panel-title">รายการอุปกรณ์ PPE ทั้งหมด</span></div>
+        <table>
+          <thead><tr><th>อุปกรณ์</th><th>คงเหลือ</th><th>เบิกไปแล้ว</th><th>สถานะ</th></tr></thead>
+          <tbody id="stock-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===== HISTORY ===== -->
+    <div class="page" id="page-history">
+      <div class="topbar">
+        <div class="page-title">ประวัติการเบิกทั้งหมด</div>
+        <div class="topbar-actions">
+          <button class="btn btn-export btn-sm" onclick="exportHistory()">📥 Export Excel</button>
+        </div>
+      </div>
+      <div class="panel">
+        <table>
+          <thead>
+            <tr>
+              <th>วันที่</th>
+              <th>ชื่อ-สกุล</th>
+              <th>แผนก</th>
+              <th>รายการที่เบิก</th>
+              <th>สถานะ</th>
+              <th>จัดการ</th>
+            </tr>
+          </thead>
+          <tbody id="history-table-body"></tbody>
+        </table>
+        <div class="empty-state" id="history-empty">
+          <div class="icon">📋</div><div>ยังไม่มีประวัติการเบิก</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== MANAGE ===== -->
+    <div class="page" id="page-manage">
+      <div class="topbar"><div class="page-title">จัดการระบบ</div></div>
+      <div class="two-col">
+        <!-- ซ้าย: อุปกรณ์ -->
+        <div>
+          <div class="panel">
+            <div class="panel-header">
+              <span class="panel-title">อุปกรณ์ PPE</span>
+              <button class="btn btn-primary btn-sm" onclick="openAddModal()">+ เพิ่ม</button>
+            </div>
+            <table>
+              <thead><tr><th>อุปกรณ์</th><th>หน่วย</th><th>Stock</th><th></th></tr></thead>
+              <tbody id="manage-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+        <!-- ขวา -->
+        <div>
+          <div class="panel">
+            <div class="panel-header">
+              <span class="panel-title">แผนก / Line</span>
+              <button class="btn btn-primary btn-sm" onclick="addDept()">+ เพิ่มแผนก</button>
+            </div>
+            <table>
+              <thead><tr><th>ชื่อแผนก</th><th></th></tr></thead>
+              <tbody id="dept-table-body"></tbody>
+            </table>
+          </div>
+          <div class="panel">
+            <div class="panel-header"><span class="panel-title">เปลี่ยนรหัสผ่าน Admin</span></div>
+            <div style="padding:16px;display:flex;gap:10px">
+              <input class="form-input" type="password" id="new-pw" placeholder="รหัสผ่านใหม่" style="flex:1" />
+              <button class="btn btn-primary btn-sm" onclick="changePw()">บันทึก</button>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-header"><span class="panel-title">🗂️ จัดการข้อมูล</span></div>
+            <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
+              <div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+                  <span style="font-size:13px;color:var(--muted)">พื้นที่ที่ใช้ไป</span>
+                  <span style="font-size:13px;font-weight:600" id="storage-used">—</span>
+                </div>
+                <div class="stock-bar" style="height:8px">
+                  <div class="stock-fill" id="storage-bar" style="width:0%;background:var(--green)"></div>
+                </div>
+                <div style="font-size:11px;color:var(--muted);margin-top:4px">จุได้ทั้งหมดประมาณ 5MB</div>
+              </div>
+              <div style="border-top:1px solid var(--border);padding-top:12px">
+                <div style="font-size:13px;color:var(--muted);margin-bottom:8px">ล้างประวัติการเบิก</div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap">
+                  <button class="btn btn-sm btn-yellow" onclick="clearHistory(3)">ลบเกิน 3 เดือน</button>
+                  <button class="btn btn-sm btn-yellow" onclick="clearHistory(6)">ลบเกิน 6 เดือน</button>
+                  <button class="btn btn-sm btn-red" onclick="clearHistory(0)">ล้างทั้งหมด</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Modal เพิ่ม/แก้ไขอุปกรณ์ -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal">
+    <h3 id="modal-title">เพิ่มอุปกรณ์ PPE</h3>
+    <input type="hidden" id="modal-edit-id" />
+    <div class="row-2">
+      <div><label class="form-label">ชื่ออุปกรณ์</label><input class="form-input" id="modal-name" placeholder="เช่น Ear Plug" /></div>
+      <div><label class="form-label">หน่วย</label><input class="form-input" id="modal-unit" placeholder="เช่น อัน, คู่" /></div>
+    </div>
+    <div class="row-2">
+      <div><label class="form-label">จำนวน Stock</label><input class="form-input" id="modal-qty" type="number" min="0" placeholder="0" /></div>
+      <div><label class="form-label">แจ้งเตือนเมื่อเหลือน้อยกว่า</label><input class="form-input" id="modal-min" type="number" min="0" placeholder="10" /></div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px">
+      <button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="saveProduct()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal แก้ไขประวัติ -->
+<div class="modal-overlay" id="hist-modal-overlay" onclick="closeHistModal(event)">
+  <div class="modal">
+    <h3>✏️ แก้ไขรายการเบิก</h3>
+    <input type="hidden" id="hist-edit-idx" />
+    <div class="row-3" style="margin-bottom:14px">
+      <div><label class="form-label">วันที่</label><input class="form-input" type="date" id="hist-edit-date" /></div>
+      <div><label class="form-label">ชื่อ-สกุล</label><input class="form-input" id="hist-edit-name" /></div>
+      <div><label class="form-label">แผนก</label><select class="form-select" id="hist-edit-dept"></select></div>
+    </div>
+    <div style="margin-bottom:14px">
+      <label class="form-label">รายการอุปกรณ์ (แก้ไขจำนวน)</label>
+      <div id="hist-edit-items" style="display:flex;flex-direction:column;gap:4px;margin-top:8px"></div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btn-outline" onclick="closeHistModal()">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="saveHistEdit()">💾 บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== AUTH =====
+const ADMIN_PW_KEY='ppe_admin_pw';
+const DEFAULT_PW='admin1234';
+function getAdminPw(){return localStorage.getItem(ADMIN_PW_KEY)||DEFAULT_PW;}
+function doLogin(){
+  const pw=document.getElementById('pw-input').value;
+  if(pw===getAdminPw()){
+    document.getElementById('login-overlay').style.display='none';
+    document.getElementById('app').style.display='flex';
+    loadAll();renderStock();
+  }else{
+    document.getElementById('login-err').style.display='block';
+    document.getElementById('pw-input').value='';
+  }
+}
+function doLogout(){
+  document.getElementById('login-overlay').style.display='flex';
+  document.getElementById('app').style.display='none';
+  document.getElementById('pw-input').value='';
+  document.getElementById('login-err').style.display='none';
+}
+function changePw(){
+  const np=document.getElementById('new-pw').value.trim();
+  if(!np||np.length<4){showToast('รหัสผ่านต้องมีอย่างน้อย 4 ตัวอักษร','error');return;}
+  localStorage.setItem(ADMIN_PW_KEY,np);
+  document.getElementById('new-pw').value='';
+  showToast('✅ เปลี่ยนรหัสผ่านแล้ว');
+}
+
+// ===== DATA =====
+let products=[],departments=[],history=[];
+function loadAll(){
+  try{products=JSON.parse(localStorage.getItem('ppe_products')||'null')||defaultProducts();}catch(e){products=defaultProducts();}
+  try{departments=JSON.parse(localStorage.getItem('ppe_depts')||'null')||['Line 1','Line 2'];}catch(e){departments=['Line 1','Line 2'];}
+  try{history=JSON.parse(localStorage.getItem('ppe_history')||'[]');}catch(e){history=[];}
+}
+function saveAll(){
+  localStorage.setItem('ppe_products',JSON.stringify(products));
+  localStorage.setItem('ppe_depts',JSON.stringify(departments));
+  localStorage.setItem('ppe_history',JSON.stringify(history));
+}
+function defaultProducts(){
+  return[
+    {id:1,name:'Ear Plug',unit:'คู่',qty:200,min:20,used:0},
+    {id:2,name:'หมวกนิรภัย',unit:'ใบ',qty:50,min:10,used:0},
+    {id:3,name:'เสื้อ Safety',unit:'ตัว',qty:80,min:10,used:0},
+    {id:4,name:'ถุงมือ',unit:'คู่',qty:300,min:30,used:0},
+    {id:5,name:'แว่นตานิรภัย',unit:'อัน',qty:40,min:5,used:0},
+    {id:6,name:'รองเท้านิรภัย',unit:'คู่',qty:30,min:5,used:0},
+  ];
+}
+
+// ===== NAVIGATION =====
+function showPage(name,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  el.classList.add('active');
+  loadAll();
+  if(name==='stock')  renderStock();
+  if(name==='history')renderHistory();
+  if(name==='manage'){renderManage();renderDeptTable();updateStorageBar();}
+}
+
+// ===== STOCK =====
+function renderStock(){
+  const tot=products.length,ok=products.filter(p=>p.qty>p.min).length,
+        low=products.filter(p=>p.qty>0&&p.qty<=p.min).length,out=products.filter(p=>p.qty===0).length;
+  document.getElementById('summary-cards').innerHTML=`
+    <div class="card"><div class="card-label">รายการทั้งหมด</div><div class="card-value accent">${tot}</div></div>
+    <div class="card"><div class="card-label">พร้อมใช้งาน</div><div class="card-value green">${ok}</div></div>
+    <div class="card"><div class="card-label">ใกล้หมด</div><div class="card-value yellow">${low}</div></div>
+    <div class="card"><div class="card-label">หมดแล้ว</div><div class="card-value red">${out}</div></div>`;
+  document.getElementById('stock-table-body').innerHTML=products.map(p=>{
+    const t=p.qty+p.used,pct=t>0?Math.round((p.qty/t)*100):0;
+    const c=p.qty===0?'var(--red)':p.qty<=p.min?'var(--yellow)':'var(--green)';
+    const b=p.qty===0?'<span class="badge out">หมดแล้ว</span>':p.qty<=p.min?'<span class="badge low">ใกล้หมด</span>':'<span class="badge ok">พร้อมใช้</span>';
+    return`<tr>
+      <td><strong>${p.name}</strong></td>
+      <td><span class="stock-num" style="color:${c}">${p.qty}</span> <span style="color:var(--muted);font-size:12px">${p.unit}</span>
+        <div class="stock-bar"><div class="stock-fill" style="width:${pct}%;background:${c}"></div></div></td>
+      <td style="color:var(--muted)">${p.used} ${p.unit}</td>
+      <td>${b}</td></tr>`;
+  }).join('');
+}
+
+// ===== HISTORY =====
+function renderHistory(){
+  loadAll();
+  const tbody=document.getElementById('history-table-body'),empty=document.getElementById('history-empty');
+  if(!history.length){tbody.innerHTML='';empty.style.display='block';return;}
+  empty.style.display='none';
+  tbody.innerHTML=history.map((h,i)=>{
+    const cancelled=h.cancelled===true;
+    return`<tr class="${cancelled?'cancelled-row':''}">
+      <td style="white-space:nowrap;font-size:13px;color:var(--muted)">${h.date}</td>
+      <td><strong>${h.name}</strong></td>
+      <td><span class="dept-tag">${h.dept}</span></td>
+      <td>${h.items.map(it=>`<div style="font-size:13px;padding:2px 0">${it.name} <span style="color:var(--accent);font-weight:600">×${it.qty}</span> <span style="color:var(--muted);font-size:12px">${it.unit}</span></div>`).join('')}</td>
+      <td>${cancelled?'<span class="badge cancelled">ยกเลิกแล้ว</span>':'<span class="badge ok">ปกติ</span>'}</td>
+      <td style="white-space:nowrap">
+        ${!cancelled?`<button class="btn btn-sm btn-outline" onclick="openHistEdit(${i})" style="margin-right:4px">✏️ แก้ไข</button>
+        <button class="btn btn-sm btn-red" onclick="cancelRecord(${i})">❌ ยกเลิก</button>`
+        :`<button class="btn btn-sm btn-green" onclick="restoreRecord(${i})">↩️ คืนสถานะ</button>
+        <button class="btn btn-sm btn-red" onclick="deleteRecord(${i})" style="margin-left:4px">🗑️ ลบ</button>`}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ยกเลิกรายการ (คืน stock)
+function cancelRecord(i){
+  loadAll();
+  const h=history[i];
+  if(h.cancelled)return;
+  if(!confirm(`ยกเลิกรายการเบิกของ "${h.name}" วันที่ ${h.date}?\nจะคืน stock กลับอัตโนมัติ`))return;
+  // คืน stock
+  h.items.forEach(it=>{
+    const p=products.find(x=>x.id===it.pid);
+    if(p){p.qty+=it.qty;p.used=Math.max(0,p.used-it.qty);}
+  });
+  h.cancelled=true;
+  saveAll();renderHistory();renderStock();
+  showToast('✅ ยกเลิกรายการแล้ว stock คืนเรียบร้อย');
+}
+
+// คืนสถานะ (ตัด stock ใหม่)
+function restoreRecord(i){
+  loadAll();
+  const h=history[i];
+  if(!h.cancelled)return;
+  // ตรวจ stock พอไหม
+  let ok=true;
+  h.items.forEach(it=>{
+    const p=products.find(x=>x.id===it.pid);
+    if(!p||p.qty<it.qty){showToast(`${it.name} stock ไม่พอ (เหลือ ${p?p.qty:0} ${it.unit})`,'error');ok=false;}
+  });
+  if(!ok)return;
+  h.items.forEach(it=>{const p=products.find(x=>x.id===it.pid);if(p){p.qty-=it.qty;p.used+=it.qty;}});
+  h.cancelled=false;
+  saveAll();renderHistory();renderStock();
+  showToast('✅ คืนสถานะแล้ว');
+}
+
+// ลบถาวร
+function deleteRecord(i){
+  if(!confirm('ลบรายการนี้ถาวร?\n(ข้อมูลจะหายไม่สามารถกู้คืนได้)'))return;
+  loadAll();
+  history.splice(i,1);
+  saveAll();renderHistory();
+  showToast('✅ ลบรายการแล้ว');
+}
+
+// แก้ไขประวัติ
+function openHistEdit(i){
+  loadAll();
+  const h=history[i];
+  document.getElementById('hist-edit-idx').value=i;
+
+  // date
+  const rawDate=h.rawDate||new Date().toISOString().split('T')[0];
+  document.getElementById('hist-edit-date').value=rawDate;
+  document.getElementById('hist-edit-name').value=h.name;
+
+  // dept dropdown
+  const dsel=document.getElementById('hist-edit-dept');
+  dsel.innerHTML=departments.map(d=>`<option value="${d}" ${d===h.dept?'selected':''}>${d}</option>`).join('');
+
+  // items
+  const box=document.getElementById('hist-edit-items');
+  box.innerHTML=h.items.map((it,j)=>`
+    <div class="hist-item-row">
+      <span class="hist-item-name">${it.name}</span>
+      <input class="hist-item-qty" type="number" min="1" value="${it.qty}" data-j="${j}" />
+      <span class="hist-item-unit">${it.unit}</span>
+    </div>
+  `).join('');
+  document.getElementById('hist-modal-overlay').classList.add('open');
+}
+
+function saveHistEdit(){
+  loadAll();
+  const i=parseInt(document.getElementById('hist-edit-idx').value);
+  const h=history[i];
+  const oldItems=[...h.items.map(x=>({...x}))];
+
+  const newDate=document.getElementById('hist-edit-date').value;
+  const newName=document.getElementById('hist-edit-name').value.trim();
+  const newDept=document.getElementById('hist-edit-dept').value;
+  if(!newName){showToast('กรุณากรอกชื่อ','error');return;}
+
+  // อ่านจำนวนใหม่
+  const inputs=document.querySelectorAll('#hist-edit-items .hist-item-qty');
+  const newQtys=Array.from(inputs).map(el=>parseInt(el.value)||0);
+
+  // คืน stock เก่า
+  if(!h.cancelled){
+    oldItems.forEach(it=>{const p=products.find(x=>x.id===it.pid);if(p){p.qty+=it.qty;p.used=Math.max(0,p.used-it.qty);}});
+  }
+
+  // ตัด stock ใหม่
+  let ok=true;
+  h.items.forEach((it,j)=>{
+    const nq=newQtys[j];
+    if(nq<=0){showToast('จำนวนต้องมากกว่า 0','error');ok=false;return;}
+    const p=products.find(x=>x.id===it.pid);
+    if(!h.cancelled&&p&&p.qty<nq){showToast(`${it.name} stock ไม่พอ`,'error');ok=false;}
+  });
+  if(!ok){
+    // คืน stock เดิมกลับ
+    if(!h.cancelled){oldItems.forEach(it=>{const p=products.find(x=>x.id===it.pid);if(p){p.qty-=it.qty;p.used+=it.qty;}});}
+    return;
+  }
+
+  // apply
+  const d=new Date(newDate);
+  h.date=d.toLocaleDateString('th-TH',{year:'numeric',month:'long',day:'numeric'});
+  h.rawDate=newDate;
+  h.name=newName;
+  h.dept=newDept;
+  h.items.forEach((it,j)=>{
+    it.qty=newQtys[j];
+    if(!h.cancelled){const p=products.find(x=>x.id===it.pid);if(p){p.qty-=it.qty;p.used+=it.qty;}}
+  });
+
+  saveAll();closeHistModal();renderHistory();renderStock();
+  showToast('✅ แก้ไขรายการเรียบร้อย');
+}
+
+function closeHistModal(e){
+  if(!e||e.target===document.getElementById('hist-modal-overlay'))
+    document.getElementById('hist-modal-overlay').classList.remove('open');
+}
+
+// ===== MANAGE =====
+function renderManage(){
+  document.getElementById('manage-table-body').innerHTML=products.map(p=>`<tr>
+    <td><strong>${p.name}</strong></td>
+    <td style="color:var(--muted)">${p.unit}</td>
+    <td><strong style="color:${p.qty===0?'var(--red)':p.qty<=p.min?'var(--yellow)':'var(--green)'}">${p.qty}</strong></td>
+    <td style="white-space:nowrap">
+      <button class="btn btn-outline btn-sm" onclick="openEditModal(${p.id})" style="margin-right:4px">แก้ไข</button>
+      <button class="btn btn-sm btn-green" onclick="restockItem(${p.id})" style="margin-right:4px">+เติม</button>
+      <button class="btn btn-sm btn-red" onclick="deleteProduct(${p.id})">🗑️</button>
+    </td></tr>`).join('');
+}
+function renderDeptTable(){
+  document.getElementById('dept-table-body').innerHTML=departments.map((d,i)=>`<tr>
+    <td><span class="dept-tag">${d}</span></td>
+    <td style="text-align:right"><button class="btn btn-sm btn-red" onclick="removeDept(${i})">ลบ</button></td>
+  </tr>`).join('');
+}
+function addDept(){
+  const name=prompt('ชื่อแผนก / Line ใหม่:');
+  if(name&&name.trim()){departments.push(name.trim());saveAll();renderDeptTable();showToast('✅ เพิ่มแผนก '+name.trim());}
+}
+function removeDept(i){
+  if(!confirm(`ลบแผนก "${departments[i]}" ?`))return;
+  departments.splice(i,1);saveAll();renderDeptTable();
+}
+function deleteProduct(id){
+  const p=products.find(x=>x.id===id);
+  if(!confirm(`ลบ "${p.name}" ออกจากระบบ?\n\nหมายเหตุ: ประวัติการเบิกที่ผ่านมาจะยังคงอยู่`))return;
+  products=products.filter(x=>x.id!==id);
+  saveAll();renderManage();renderStock();
+  showToast(`✅ ลบ ${p.name} แล้ว`);
+}
+function restockItem(id){
+  const p=products.find(x=>x.id===id);
+  const qty=parseInt(prompt(`เติม Stock "${p.name}"\nจำนวนที่ต้องการเติม (${p.unit}):`));
+  if(qty>0){p.qty+=qty;saveAll();renderManage();renderStock();showToast(`✅ เติม ${p.name} +${qty} ${p.unit}`);}
+}
+
+// ===== PRODUCT MODAL =====
+function openAddModal(){
+  document.getElementById('modal-title').textContent='เพิ่มอุปกรณ์ PPE';
+  ['modal-edit-id','modal-name','modal-unit','modal-qty','modal-min'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function openEditModal(id){
+  const p=products.find(x=>x.id===id);
+  document.getElementById('modal-title').textContent='แก้ไขอุปกรณ์';
+  document.getElementById('modal-edit-id').value=id;
+  document.getElementById('modal-name').value=p.name;
+  document.getElementById('modal-unit').value=p.unit;
+  document.getElementById('modal-qty').value=p.qty;
+  document.getElementById('modal-min').value=p.min;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function closeModal(e){
+  if(!e||e.target===document.getElementById('modal-overlay'))
+    document.getElementById('modal-overlay').classList.remove('open');
+}
+function saveProduct(){
+  const editId=parseInt(document.getElementById('modal-edit-id').value)||0;
+  const name=document.getElementById('modal-name').value.trim();
+  const unit=document.getElementById('modal-unit').value.trim();
+  const qty=parseInt(document.getElementById('modal-qty').value)||0;
+  const min=parseInt(document.getElementById('modal-min').value)||0;
+  if(!name){showToast('กรุณากรอกชื่ออุปกรณ์','error');return;}
+  if(!unit){showToast('กรุณากรอกหน่วย','error');return;}
+  if(editId){const p=products.find(x=>x.id===editId);Object.assign(p,{name,unit,qty,min});}
+  else{const nid=Math.max(...products.map(p=>p.id),0)+1;products.push({id:nid,name,unit,qty,min,used:0});}
+  saveAll();closeModal();renderManage();renderStock();showToast('✅ บันทึกข้อมูลอุปกรณ์แล้ว');
+}
+
+// ===== CLEAR HISTORY =====
+function clearHistory(months){
+  loadAll();
+  const label=months===0?'ประวัติทั้งหมด':`ประวัติเกิน ${months} เดือน`;
+  if(!confirm(`⚠️ ยืนยันการลบ${label}?\nข้อมูลที่ลบจะไม่สามารถกู้คืนได้`))return;
+  if(months===0){history=[];}
+  else{
+    const cutoff=new Date();cutoff.setMonth(cutoff.getMonth()-months);
+    history=history.filter(h=>{
+      try{const d=h.rawDate?new Date(h.rawDate):new Date();return d>=cutoff;}catch(e){return true;}
+    });
+  }
+  localStorage.setItem('ppe_history',JSON.stringify(history));
+  renderHistory();updateStorageBar();
+  showToast(`✅ ลบ${label}แล้ว`);
+}
+
+function updateStorageBar(){
+  try{
+    let total=0;
+    for(let k in localStorage){if(localStorage.hasOwnProperty(k)&&k.startsWith('ppe_')){total+=localStorage[k].length*2;}}
+    const pct=Math.min((total/(5*1024*1024))*100,100),kb=(total/1024).toFixed(1);
+    const el=document.getElementById('storage-used'),bar=document.getElementById('storage-bar');
+    if(el)el.textContent=`${kb} KB / 5,000 KB`;
+    if(bar){bar.style.width=pct+'%';bar.style.background=pct>80?'var(--red)':pct>50?'var(--yellow)':'var(--green)';}
+  }catch(e){}
+}
+
+// ===== EXPORT EXCEL (CSV) =====
+function exportStock(){
+  loadAll();
+  const rows=[['อุปกรณ์','หน่วย','คงเหลือ','เบิกไปแล้ว','สถานะ']];
+  products.forEach(p=>{
+    const status=p.qty===0?'หมดแล้ว':p.qty<=p.min?'ใกล้หมด':'พร้อมใช้';
+    rows.push([p.name,p.unit,p.qty,p.used,status]);
+  });
+  downloadCSV(rows,'PPE_Stock_'+today()+'.csv');
+  showToast('📥 Export Stock เรียบร้อย');
+}
+
+function exportHistory(){
+  loadAll();
+  const rows=[['วันที่','ชื่อ-สกุล','แผนก','อุปกรณ์','จำนวน','หน่วย','สถานะ']];
+  history.forEach(h=>{
+    h.items.forEach(it=>{
+      rows.push([h.date,h.name,h.dept,it.name,it.qty,it.unit,h.cancelled?'ยกเลิก':'ปกติ']);
+    });
+  });
+  downloadCSV(rows,'PPE_History_'+today()+'.csv');
+  showToast('📥 Export ประวัติเรียบร้อย');
+}
+
+function downloadCSV(rows,filename){
+  const bom='\uFEFF'; // UTF-8 BOM for Excel
+  const csv=bom+rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\r\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download=filename;a.click();
+}
+
+function today(){
+  return new Date().toISOString().split('T')[0].replace(/-/g,'');
+}
+
+// ===== TOAST =====
+function showToast(msg,type='success'){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='toast'+(type==='error'?' error':'');
+  t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);
+}
+</script>
+</body>
+</html>
